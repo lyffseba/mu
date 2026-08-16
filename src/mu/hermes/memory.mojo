@@ -100,6 +100,18 @@ def _join_with_sep(parts: List[String]) -> String:
     return out
 
 
+def require_target(target: String) raises:
+    if target != "memory" and target != "user" and target != "session":
+        raise Error("target must be memory, user, or session")
+
+
+def require_entry_text(text: String) raises:
+    if text.byte_length() == 0:
+        raise Error("content is required")
+    if text.find(SEP) >= 0:
+        raise Error("content must not contain the entry separator")
+
+
 def store_limit(target: String) -> Int:
     if target == "user":
         return USER_LIMIT
@@ -107,6 +119,7 @@ def store_limit(target: String) -> Int:
 
 
 def load_entries(target: String, session_id: String) raises -> List[String]:
+    require_target(target)
     var path: Path
     if target == "user":
         path = user_path()
@@ -118,6 +131,7 @@ def load_entries(target: String, session_id: String) raises -> List[String]:
 
 
 def save_entries(target: String, session_id: String, entries: List[String]) raises:
+    require_target(target)
     var path: Path
     if target == "user":
         path = user_path()
@@ -153,8 +167,8 @@ def memory_add(
 ) raises -> String:
     var entries = load_entries(target, session_id)
     var text = strip_text(content)
-    if text.byte_length() == 0:
-        raise Error("content is required")
+    require_entry_text(text)
+    var before = char_count(entries)
     entries.append(text)
     var n = char_count(entries)
     var limit = store_limit(target)
@@ -162,7 +176,7 @@ def memory_add(
         raise Error(
             String(
                 "Memory at ",
-                n - text.byte_length(),
+                before,
                 "/",
                 limit,
                 " chars. Adding this entry (",
@@ -180,8 +194,7 @@ def memory_replace(
     var entries = load_entries(target, session_id)
     var idx = find_unique(entries, old_text)
     var text = strip_text(content)
-    if text.byte_length() == 0:
-        raise Error("content is required")
+    require_entry_text(text)
     entries[idx] = text
     var n = char_count(entries)
     var limit = store_limit(target)

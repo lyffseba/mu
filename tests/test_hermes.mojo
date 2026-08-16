@@ -12,7 +12,7 @@ from mu.hermes.memory import (
     memory_replace,
     split_entries,
 )
-from mu.hermes.paths import is_awake, mark_awake
+from mu.hermes.paths import hermes_home_path, is_awake, mark_awake
 from mu.hermes.tool import create_memory_tool, execute_memory
 from mu.agent.messages import ToolCall
 
@@ -62,6 +62,33 @@ def test_overflow_errors() raises:
     assert_true(threw)
     _ = char_count(List[String]())
     _ = split_entries("")
+
+
+def test_is_awake_does_not_mkdir() raises:
+    _ = _isolate()
+    var sid = "20260816-120000-000099"
+    assert_true(not is_awake(sid))
+    var root = hermes_home_path()
+    assert_true(not root.exists())
+
+
+def test_reject_separator_and_bad_target() raises:
+    _ = _isolate()
+    var sid = "20260816-120000-000098"
+    var threw_sep = False
+    try:
+        _ = memory_add("session", sid, "bad § entry")
+    except e:
+        threw_sep = True
+        assert_true(String(e).find("separator") >= 0)
+    assert_true(threw_sep)
+    var threw_target = False
+    try:
+        _ = memory_add("nope", sid, "x")
+    except e:
+        threw_target = True
+        assert_true(String(e).find("target") >= 0)
+    assert_true(threw_target)
 
 
 def test_awake_and_snapshot() raises:

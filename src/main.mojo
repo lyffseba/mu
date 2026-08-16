@@ -181,6 +181,9 @@ def main() raises:
     var templates = load_templates(work)
     var persist = not args.no_session
     var session_name = args.session_name
+    if args.hermes and not persist:
+        print("error: --hermes requires a persisted session (drop --no-session)")
+        exit(2)
 
     var session_id = args.session
     var resumed = False

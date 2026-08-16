@@ -12,8 +12,13 @@
 from std.os import mkdir
 from std.pathlib import Path
 
-from mu.coding.settings import mu_home
+from mu.coding.settings import mu_home, mu_home_path
 from mu.text import is_session_id
+
+
+def hermes_home_path() raises -> Path:
+    """Path only. Does not create directories."""
+    return mu_home_path() / "hermes"
 
 
 def hermes_home() raises -> Path:
@@ -35,13 +40,18 @@ def global_memory_path() raises -> Path:
     return hermes_home() / "MEMORY.md"
 
 
-def session_hermes_dir(session_id: String) raises -> Path:
+def session_hermes_dir_path(session_id: String) raises -> Path:
+    """Path only. Does not create directories."""
     if not is_session_id(session_id):
         raise Error(String("Invalid session id for Hermes: ", session_id))
+    return hermes_home_path() / "sessions" / session_id
+
+
+def session_hermes_dir(session_id: String) raises -> Path:
     var root = hermes_home() / "sessions"
     if not root.exists():
         mkdir(root)
-    var d = root / session_id
+    var d = session_hermes_dir_path(session_id)
     if not d.exists():
         mkdir(d)
     return d
@@ -52,15 +62,18 @@ def session_memory_path(session_id: String) raises -> Path:
 
 
 def awake_path(session_id: String) raises -> Path:
-    return session_hermes_dir(session_id) / "AWAKE"
+    return session_hermes_dir_path(session_id) / "AWAKE"
 
 
 def is_awake(session_id: String) raises -> Bool:
+    """True only if this session was already woken. Never creates files."""
     if not is_session_id(session_id):
         return False
-    return awake_path(session_id).exists()
+    var path = awake_path(session_id)
+    return path.exists() and path.is_file()
 
 
 def mark_awake(session_id: String) raises:
+    _ = session_hermes_dir(session_id)
     var path = awake_path(session_id)
     path.write_text("awake\n")
