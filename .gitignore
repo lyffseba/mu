@@ -1,0 +1,23 @@
+# pixi environments
+.pixi/*
+!.pixi/config.toml
+
+# build artifacts
+*.mojoc
+/build
+/tmp
+/mu
+
+# sessions / secrets
+.mu/
+.env
+.env.*
+
+# python
+__pycache__/
+*.py[cod]
+
+# editor
+.vscode/
+.idea/
+.DS_Store
