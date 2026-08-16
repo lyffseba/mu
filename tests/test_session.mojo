@@ -3,8 +3,10 @@ from std.pathlib import Path
 from std.testing import assert_equal, assert_true, TestSuite
 from std.tempfile import mkdtemp
 
-from mu.agent.messages import Message
+from mu.agent.messages import Message, ToolCall
+from mu.agent.tools import Tool, ToolResult
 from mu.coding.session import (
+    format_session_list,
     load_session_messages,
     persist_compaction,
     persist_message,
@@ -12,6 +14,7 @@ from mu.coding.session import (
     sessions_dir,
     write_session_header,
 )
+from mu.plugin import CommandResult, NullPlugin, Plugin
 from mu.text import is_session_id
 
 
@@ -168,6 +171,85 @@ def test_continue_ignores_other_cwd() raises:
 def test_continue_none_when_no_sessions() raises:
     _ = _isolate()
     assert_equal(resolve_continue_session(""), "")
+
+
+struct MarkPlugin(Plugin, ImplicitlyCopyable):
+    """Marks one session so --sessions can show a plugin tag."""
+
+    var mark_id: String
+    var mark: String
+
+    def __init__(out self, mark_id: String, mark: String):
+        self.mark_id = mark_id
+        self.mark = mark
+
+    def version_suffix(self) -> String:
+        return ""
+
+    def extra_help(self) -> String:
+        return ""
+
+    def extra_status(self, session_id: String) raises -> String:
+        _ = session_id
+        return ""
+
+    def session_mark(self, session_id: String) raises -> String:
+        if session_id == self.mark_id:
+            return self.mark
+        return ""
+
+    def extra_tools(self, session_id: String) raises -> List[Tool]:
+        _ = session_id
+        return List[Tool]()
+
+    def extra_prompt(self, session_id: String) raises -> String:
+        _ = session_id
+        return ""
+
+    def on_start(
+        mut self, session_id: String, persist: Bool, flag_on: Bool
+    ) raises -> String:
+        _ = session_id
+        _ = persist
+        _ = flag_on
+        return ""
+
+    def handle_command(
+        mut self, text: String, session_id: String, persist: Bool
+    ) raises -> CommandResult:
+        _ = text
+        _ = session_id
+        _ = persist
+        return CommandResult.ignore()
+
+    def execute_tool(
+        self, tool: Tool, call: ToolCall, session_id: String
+    ) raises -> ToolResult:
+        _ = tool
+        _ = call
+        _ = session_id
+        return ToolResult.error("unused")
+
+
+def test_session_list_includes_plugin_mark() raises:
+    _ = _isolate()
+    var dir_path = sessions_dir()
+    write_session_header(
+        dir_path / "20260816-120000-000002.jsonl",
+        "20260816-120000-000002",
+        "/tmp",
+        "m",
+        "fake",
+        "named",
+    )
+    var listed = format_session_list(NullPlugin(), "/tmp")
+    assert_true(listed.find("20260816-120000-000002") >= 0)
+    assert_true(listed.find("[awake]") < 0)
+    var marked = format_session_list(
+        MarkPlugin("20260816-120000-000002", "awake"), "/tmp"
+    )
+    assert_true(marked.find("[awake]") >= 0)
+    assert_true(marked.find("named") >= 0)
 
 
 def test_load_skips_truncated_tail() raises:

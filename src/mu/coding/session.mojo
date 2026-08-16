@@ -7,6 +7,7 @@ from std.python import PythonObject
 from mu.agent.messages import Message
 from mu.coding.context import apply_compaction, replay_compaction
 from mu.coding.settings import mu_home
+from mu.plugin import Plugin
 from mu.jsonx import (
     empty_object,
     json_dumps,
@@ -267,7 +268,7 @@ def list_session_ids() raises -> List[String]:
     return ids^
 
 
-def format_session_list(cwd: String = "") raises -> String:
+def format_session_list[P: Plugin](plugin: P, cwd: String = "") raises -> String:
     var ids: List[String]
     if cwd.byte_length() > 0:
         ids = list_session_ids_for_cwd(cwd)
@@ -285,11 +286,14 @@ def format_session_list(cwd: String = "") raises -> String:
         var label = load_session_name(path)
         if label.byte_length() == 0:
             label = py_str(runtime().preview_session(String(path), 60))
+        var mark = plugin.session_mark(ident)
+        var line = ident
+        if mark.byte_length() > 0:
+            line = String(ident, "  [", mark, "]")
+        if label.byte_length() > 0:
+            line = String(line, "  ", label)
         if shown > 0:
             out += "\n"
-        if label.byte_length() > 0:
-            out += String(ident, "  ", label)
-        else:
-            out += ident
+        out += line
         shown += 1
     return out

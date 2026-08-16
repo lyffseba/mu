@@ -171,7 +171,7 @@ def main() raises:
         print(usage())
         exit(2)
     if args.list_sessions:
-        print(format_session_list(args.cwd))
+        print(format_session_list(create_plugin(), args.cwd))
         return
 
     var provider_cfg = resolve_provider(args)
@@ -528,16 +528,18 @@ def repl[
             print(String("name: ", session_name))
             continue
         if text == "/status":
-            print(
-                String(
-                    "messages=",
-                    len(loop.messages),
-                    "  ~tokens=",
-                    estimate_context_tokens(loop.system, loop.messages),
-                    "  threshold=",
-                    compact_threshold,
-                )
+            var line = String(
+                "messages=",
+                len(loop.messages),
+                "  ~tokens=",
+                estimate_context_tokens(loop.system, loop.messages),
+                "  threshold=",
+                compact_threshold,
             )
+            var plug_status = runner.plugin.extra_status(session_id)
+            if plug_status.byte_length() > 0:
+                line = line + "  " + plug_status
+            print(line)
             continue
         if text == "/compact" or text.startswith("/compact "):
             var compacted = apply_compaction(loop.messages, compact_keep)

@@ -15,3 +15,4 @@ Phase-by-phase build journal. Public docs stay in `README.md`.
 - [014-plugin.md](014-plugin.md) — Plugin hook; NullPlugin on master
 - [016-plugin-better.md](016-plugin-better.md) — --hermes, create_plugin, glob tests
 - [018-plugin-right.md](018-plugin-right.md) — last-block, custom system, runner owns plugin
+- [020-plugin-status.md](020-plugin-status.md) — /status and --sessions show plugin marks
