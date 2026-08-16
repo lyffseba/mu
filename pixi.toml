@@ -7,7 +7,7 @@ version = "0.6.0"
 [tasks]
 mu = { cmd = "mojo run -I src src/main.mojo", cwd = "." }
 build = { cmd = "mkdir -p build && mojo build -I src -o build/mu src/main.mojo && cp src/mu_runtime.py build/mu_runtime.py", cwd = "." }
-test = { cmd = "mojo run -I src tests/test_text.mojo && mojo run -I src tests/test_tools.mojo && mojo run -I src tests/test_history.mojo && mojo run -I src tests/test_loop.mojo && mojo run -I src tests/test_openai.mojo && mojo run -I src tests/test_session.mojo && mojo run -I src tests/test_context.mojo && mojo run -I src tests/test_settings.mojo && mojo run -I src tests/test_skills.mojo && mojo run -I src tests/test_templates.mojo && mojo run -I src tests/test_tree.mojo && mojo run -I src tests/test_plugin.mojo", cwd = "." }
+test = { cmd = "sh -c 'set -e; for f in tests/test_*.mojo; do mojo run -I src \"$f\"; done'", cwd = "." }
 fmt = { cmd = "mojo format src tests", cwd = "." }
 
 [dependencies]

@@ -1,10 +1,8 @@
-"""Tiny plugin hook. Master ships NullPlugin only.
+"""Tiny plugin hook. Master ships NullPlugin via coding/active.mojo.
 
-A plugin can add tools, a system-prompt block, slash commands, and
-tool kinds the coding runner does not know. Hermes is one plugin
-(on the hermes branch). Master never imports it.
-
-Pi/Hermes both treat this as an extension, not a fork.
+A plugin can add tools, a system-prompt block, slash commands, a
+version suffix, and tool kinds the coding runner does not know.
+Hermes overwrites coding/active.mojo. Master never imports mu.hermes.
 """
 
 from mu.agent.messages import ToolCall
@@ -41,6 +39,9 @@ struct CommandResult(Copyable, ImplicitlyCopyable, Movable):
 trait Plugin(Copyable, Movable, Deinitable):
     """Optional extra behavior. Implementations must be cheap no-ops when idle."""
 
+    def version_suffix(self) -> String:
+        ...
+
     def extra_help(self) -> String:
         ...
 
@@ -74,6 +75,9 @@ struct NullPlugin(Plugin, ImplicitlyCopyable):
 
     def __init__(out self):
         self._unused = 0
+
+    def version_suffix(self) -> String:
+        return ""
 
     def extra_help(self) -> String:
         return ""

@@ -2,11 +2,13 @@ from std.testing import assert_equal, assert_true, TestSuite
 
 from mu.agent.messages import ToolCall
 from mu.agent.tools import Tool
+from mu.coding.active import create_plugin
 from mu.plugin import CommandResult, NullPlugin
 
 
 def test_null_plugin_is_idle() raises:
-    var p = NullPlugin()
+    var p = create_plugin()
+    assert_equal(p.version_suffix(), "")
     assert_equal(p.extra_help(), "")
     assert_equal(len(p.extra_tools("s")), 0)
     assert_equal(p.extra_prompt("s"), "")

@@ -40,8 +40,10 @@ from mu.coding.templates import (
     format_template_list,
     load_templates,
 )
+from mu.agent.tools import find_tool
+from mu.coding.active import create_plugin
 from mu.coding.tools import create_coding_tools
-from mu.plugin import CommandResult, NullPlugin, Plugin
+from mu.plugin import Plugin
 from mu.jsonx import py_str
 from mu.pyrt import runtime
 from mu.text import is_blank, strip_text
@@ -162,7 +164,7 @@ def main() raises:
         print(usage())
         return
     if args.version:
-        print(String("mu ", VERSION))
+        print(String("mu ", VERSION, create_plugin().version_suffix()))
         return
     if args.error.byte_length() > 0:
         print("error:", args.error)
@@ -219,8 +221,8 @@ def main() raises:
         except e:
             print("error:", String(e))
             exit(2)
-    var plugin = NullPlugin()
-    var start_err = plugin.on_start(session_id, persist, False)
+    var plugin = create_plugin()
+    var start_err = plugin.on_start(session_id, persist, args.hermes)
     if start_err.byte_length() > 0:
         print("error:", start_err)
         exit(2)
@@ -251,6 +253,9 @@ def main() raises:
                 exit(2)
             if pre.printed.byte_length() > 0:
                 print(pre.printed)
+            apply_plugin_effects(
+                loop, plugin, session_id, work, args.system_prompt, skills
+            )
             if pre.consume:
                 if not args.interactive:
                     return
@@ -334,6 +339,31 @@ def main() raises:
     )
     if not ok:
         exit(1)
+
+
+def apply_plugin_effects[
+    P: Plugin
+](
+    mut loop: AgentLoop,
+    plugin: P,
+    session_id: String,
+    cwd_path: String,
+    custom: String,
+    skills: List[Skill],
+) raises:
+    """Add newly offered plugin tools. Rebuild the prompt only if one landed."""
+    var added = False
+    for tool in plugin.extra_tools(session_id):
+        if not find_tool(loop.tools, tool.name):
+            loop.add_tool(tool.copy())
+            added = True
+    if not added:
+        return
+    loop.replace_system(
+        build_system_prompt(
+            cwd_path, loop.tools, custom, plugin.extra_prompt(session_id), skills
+        )
+    )
 
 
 def drive[
@@ -446,6 +476,7 @@ def repl[
         String(
             "mu ",
             VERSION,
+            runner.plugin.version_suffix(),
             "  cwd=",
             loop.cwd,
             "  model=",
@@ -483,6 +514,7 @@ def repl[
                 continue
             if plug.printed.byte_length() > 0:
                 print(plug.printed)
+            apply_plugin_effects(loop, runner.plugin, session_id, cwd, "", skills)
             if plug.consume:
                 continue
             if plug.rewrite.byte_length() > 0:
