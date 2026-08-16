@@ -41,8 +41,8 @@ from mu.coding.templates import (
     load_templates,
 )
 from mu.agent.tools import find_tool
+from mu.coding.active import create_plugin
 from mu.coding.tools import create_coding_tools
-from mu.hermes.plugin import HermesPlugin
 from mu.plugin import Plugin
 from mu.jsonx import py_str
 from mu.pyrt import runtime
@@ -164,7 +164,7 @@ def main() raises:
         print(usage())
         return
     if args.version:
-        print(String("mu ", VERSION))
+        print(String("mu ", VERSION, create_plugin().version_suffix()))
         return
     if args.error.byte_length() > 0:
         print("error:", args.error)
@@ -221,7 +221,7 @@ def main() raises:
         except e:
             print("error:", String(e))
             exit(2)
-    var plugin = HermesPlugin()
+    var plugin = create_plugin()
     var start_err = plugin.on_start(session_id, persist, args.hermes)
     if start_err.byte_length() > 0:
         print("error:", start_err)
@@ -253,7 +253,9 @@ def main() raises:
                 exit(2)
             if pre.printed.byte_length() > 0:
                 print(pre.printed)
-            apply_plugin_effects(loop, plugin, session_id, work, args.system_prompt, skills)
+            apply_plugin_effects(
+                loop, plugin, session_id, work, args.system_prompt, skills
+            )
             if pre.consume:
                 if not args.interactive:
                     return
@@ -337,7 +339,6 @@ def main() raises:
     )
     if not ok:
         exit(1)
-
 
 
 def apply_plugin_effects[
@@ -475,6 +476,7 @@ def repl[
         String(
             "mu ",
             VERSION,
+            runner.plugin.version_suffix(),
             "  cwd=",
             loop.cwd,
             "  model=",

@@ -1,3 +1,3 @@
 """Mu: a Mojo coding-agent harness inspired by Tau and Pi."""
 
-comptime VERSION = "0.6.0-hermes"
+comptime VERSION = "0.6.0"

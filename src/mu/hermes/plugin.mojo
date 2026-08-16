@@ -22,6 +22,9 @@ struct HermesPlugin(Plugin, ImplicitlyCopyable):
     def __init__(out self):
         self._unused = 0
 
+    def version_suffix(self) -> String:
+        return "-hermes"
+
     def extra_help(self) -> String:
         return " /hermes  /memory"
 

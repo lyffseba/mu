@@ -18,3 +18,5 @@ Phase-by-phase build journal. Public docs stay in `README.md`.
 - [013-align.md](013-align.md) — merge master; recall skips this session
 - [014-plugin.md](014-plugin.md) — Plugin hook; NullPlugin on master
 - [015-hermes-plugin.md](015-hermes-plugin.md) — Hermes is HermesPlugin
+- [016-plugin-better.md](016-plugin-better.md) — --hermes, create_plugin, glob tests
+- [017-hermes-one-file.md](017-hermes-one-file.md) — hermes overwrites coding/active.mojo only

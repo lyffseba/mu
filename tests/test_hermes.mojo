@@ -158,6 +158,7 @@ def test_plugin_wakes_and_lists() raises:
     _ = _isolate()
     var sid = "20260816-120000-000006"
     var p = HermesPlugin()
+    assert_equal(p.version_suffix(), "-hermes")
     assert_equal(p.extra_help().find("/hermes") >= 0, True)
     assert_equal(len(p.extra_tools(sid)), 0)
     assert_equal(p.extra_prompt(sid), "")
