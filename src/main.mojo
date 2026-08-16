@@ -41,6 +41,7 @@ from mu.coding.templates import (
     load_templates,
 )
 from mu.coding.tools import create_coding_tools
+from mu.plugin import CommandResult, NullPlugin, Plugin
 from mu.jsonx import py_str
 from mu.pyrt import runtime
 from mu.text import is_blank, strip_text
@@ -111,11 +112,11 @@ def maybe_compact(
 
 
 def run_once[
-    C: Completer, S: EventSink
+    C: Completer, S: EventSink, P: Plugin
 ](
     mut loop: AgentLoop,
     mut provider: C,
-    runner: CodingRunner,
+    runner: CodingRunner[P],
     prompt: String,
     session: Path,
     mode: String,
@@ -123,7 +124,7 @@ def run_once[
     live: Bool,
     persist: Bool,
 ) raises -> Bool:
-    var run = loop.prompt_live[C, CodingRunner, S](
+    var run = loop.prompt_live[C, CodingRunner[P], S](
         provider, runner, prompt, sink
     )
     persist_new_messages(session, run, persist)
@@ -188,7 +189,6 @@ def main() raises:
     var templates = load_templates(work)
     var persist = not args.no_session
     var session_name = args.session_name
-    var system = build_system_prompt(work, tools, args.system_prompt, "", skills)
 
     var session_id = args.session
     var resumed = False
@@ -219,7 +219,18 @@ def main() raises:
         except e:
             print("error:", String(e))
             exit(2)
-    var runner = CodingRunner(session_id, args.model, provider_cfg.name)
+    var plugin = NullPlugin()
+    var start_err = plugin.on_start(session_id, persist, False)
+    if start_err.byte_length() > 0:
+        print("error:", start_err)
+        exit(2)
+    var extra = plugin.extra_tools(session_id)
+    for tool in extra:
+        tools.append(tool.copy())
+    var system = build_system_prompt(
+        work, tools, args.system_prompt, plugin.extra_prompt(session_id), skills
+    )
+    var runner = CodingRunner(session_id, args.model, provider_cfg.name, plugin.copy())
 
     var loop = AgentLoop(
         system, args.model, work, tools^, args.max_turns, prior^
@@ -233,6 +244,19 @@ def main() raises:
         print(format_template_list(templates))
         return
     if not is_blank(prompt):
+        var pre = plugin.handle_command(prompt, session_id, persist)
+        if pre.handled:
+            if pre.error.byte_length() > 0:
+                print("error:", pre.error)
+                exit(2)
+            if pre.printed.byte_length() > 0:
+                print(pre.printed)
+            if pre.consume:
+                if not args.interactive:
+                    return
+                prompt = ""
+            elif pre.rewrite.byte_length() > 0:
+                prompt = pre.rewrite
         try:
             var expanded = expand_skill_command(prompt, skills)
             if expanded:
@@ -313,11 +337,11 @@ def main() raises:
 
 
 def drive[
-    C: Completer
+    C: Completer, P: Plugin
 ](
     mut loop: AgentLoop,
     mut provider: C,
-    runner: CodingRunner,
+    mut runner: CodingRunner[P],
     mut session: Path,
     mut session_id: String,
     prompt: String,
@@ -395,11 +419,11 @@ def drive[
 
 
 def repl[
-    C: Completer
+    C: Completer, P: Plugin
 ](
     mut loop: AgentLoop,
     mut provider: C,
-    runner: CodingRunner,
+    mut runner: CodingRunner[P],
     mut session: Path,
     mut session_id: String,
     mode: String,
@@ -445,12 +469,24 @@ def repl[
         if text == "/help":
             print(
                 "Commands: /exit  /help  /tools  /session  /status  /compact "
-                " /clear  /skills  /prompts  /skill:<name>  /name  /tree  /fork"
+                " /clear  /skills  /prompts  /skill:<name>  /name  /tree  /fork",
+                runner.plugin.extra_help(),
             )
             continue
         if text == "/session":
             print(session_id)
             continue
+        var plug = runner.plugin.handle_command(text, session_id, persist)
+        if plug.handled:
+            if plug.error.byte_length() > 0:
+                print("error:", plug.error)
+                continue
+            if plug.printed.byte_length() > 0:
+                print(plug.printed)
+            if plug.consume:
+                continue
+            if plug.rewrite.byte_length() > 0:
+                text = plug.rewrite
         if text == "/tree":
             if persist:
                 print(format_tree(session))
