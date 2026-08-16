@@ -2,8 +2,10 @@
 
 from std.pathlib import Path
 
-from mu.agent.tools import Tool
+from mu.agent.loop import AgentLoop
+from mu.agent.tools import Tool, find_tool
 from mu.coding.skills import Skill, build_skill_index
+from mu.plugin import Plugin
 from mu.text import join_lines
 
 
@@ -97,12 +99,37 @@ def build_system_prompt(
         prompt = custom
     else:
         prompt = default_system_prompt(cwd_path, tools)
-    if append.byte_length() > 0:
-        prompt = prompt + "\n\n" + append
     var catalog = build_skill_index(skills)
     if catalog.byte_length() > 0:
         prompt = prompt + "\n\n" + catalog
     var extra = load_project_instructions(cwd_path)
     if extra.byte_length() > 0:
         prompt = prompt + extra
+    if append.byte_length() > 0:
+        prompt = prompt + "\n\n" + append
     return prompt
+
+
+def apply_plugin_effects[
+    P: Plugin
+](
+    mut loop: AgentLoop,
+    plugin: P,
+    session_id: String,
+    cwd_path: String,
+    custom: String,
+    skills: List[Skill],
+) raises:
+    """Add newly offered plugin tools. Rebuild the prompt only if one landed."""
+    var added = False
+    for tool in plugin.extra_tools(session_id):
+        if not find_tool(loop.tools, tool.name):
+            loop.add_tool(tool.copy())
+            added = True
+    if not added:
+        return
+    loop.replace_system(
+        build_system_prompt(
+            cwd_path, loop.tools, custom, plugin.extra_prompt(session_id), skills
+        )
+    )
