@@ -16,3 +16,5 @@ Phase-by-phase build journal. Public docs stay in `README.md`.
 - [011-hermes-better.md](011-hermes-better.md) — /memory, search, cross-session recall
 - [012-tree-and-ci.md](012-tree-and-ci.md) — GitHub Actions + append-only session trees
 - [013-align.md](013-align.md) — merge master; recall skips this session
+- [014-plugin.md](014-plugin.md) — Plugin hook; NullPlugin on master
+- [015-hermes-plugin.md](015-hermes-plugin.md) — Hermes is HermesPlugin

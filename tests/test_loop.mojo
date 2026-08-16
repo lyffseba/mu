@@ -9,6 +9,7 @@ from mu.ai.completers import EchoCompleter, ScriptCompleter
 from mu.ai.fake import ScriptedTurn
 from mu.coding.runner import CodingRunner
 from mu.coding.tools import create_coding_tools
+from mu.plugin import NullPlugin
 
 
 struct MalformedToolCompleter(Completer):
@@ -43,7 +44,7 @@ def test_echo_completer_stops() raises:
     var tools = create_coding_tools()
     var loop = AgentLoop("sys", "fake", ".", tools^, 4)
     var provider = EchoCompleter()
-    var runner = CodingRunner()
+    var runner = CodingRunner("", "", "", NullPlugin())
     var run = loop.prompt(provider, runner, "hello")
     assert_true(run.ok)
     var last = run.new_messages[len(run.new_messages) - 1]
@@ -58,7 +59,7 @@ def test_scripted_tool_then_text() raises:
     turns.append(ScriptedTurn.tool("bash", '{"command":"printf mu"}'))
     turns.append(ScriptedTurn.text("the command printed mu"))
     var provider = ScriptCompleter(turns^)
-    var runner = CodingRunner()
+    var runner = CodingRunner("", "", "", NullPlugin())
     var run = loop.prompt(provider, runner, "run printf")
     assert_true(run.ok)
 
@@ -84,7 +85,7 @@ def test_unknown_tool_is_error_result() raises:
     turns.append(ScriptedTurn.tool("nope", "{}"))
     turns.append(ScriptedTurn.text("handled"))
     var provider = ScriptCompleter(turns^)
-    var runner = CodingRunner()
+    var runner = CodingRunner("", "", "", NullPlugin())
     var run = loop.prompt(provider, runner, "call missing")
     assert_true(run.ok)
     var found = False
@@ -104,7 +105,7 @@ def test_repairs_dangling_tool_before_prompt() raises:
     prior.append(Message.assistant("", "toolUse", encode_tool_calls(calls)))
     var loop = AgentLoop("sys", "fake", ".", tools^, 4, prior^)
     var provider = EchoCompleter()
-    var runner = CodingRunner()
+    var runner = CodingRunner("", "", "", NullPlugin())
     var run = loop.prompt(provider, runner, "continue")
     assert_true(run.ok)
     var saw_repair = False
@@ -121,7 +122,7 @@ def test_malformed_tool_call_degrades_without_crashing() raises:
     var tools = create_coding_tools()
     var loop = AgentLoop("sys", "fake", ".", tools^, 4)
     var provider = MalformedToolCompleter()
-    var runner = CodingRunner()
+    var runner = CodingRunner("", "", "", NullPlugin())
     var run = loop.prompt(provider, runner, "go")
     assert_false(run.ok)
     var last = run.new_messages[len(run.new_messages) - 1]
@@ -136,7 +137,7 @@ def test_max_turns_stops() raises:
     turns.append(ScriptedTurn.tool("bash", '{"command":"printf a"}'))
     turns.append(ScriptedTurn.tool("bash", '{"command":"printf b"}'))
     var provider = ScriptCompleter(turns^)
-    var runner = CodingRunner()
+    var runner = CodingRunner("", "", "", NullPlugin())
     var run = loop.prompt(provider, runner, "loop")
     assert_false(run.ok)
     var last = run.new_messages[len(run.new_messages) - 1]

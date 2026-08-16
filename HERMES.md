@@ -1,6 +1,6 @@
 # Living Hermes agent (this branch)
 
-You are on **`hermes`**. This is Mu plus a native living [Hermes Agent](https://hermes-agent.nousresearch.com/docs/).
+You are on **`hermes`**. This is Mu plus a native living [Hermes Agent](https://hermes-agent.nousresearch.com/docs/) as `HermesPlugin`. Master ships `NullPlugin` and never imports this package.
 
 `master` does **not** have this. If you wanted a disposable coding session, check out `master`.
 

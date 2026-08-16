@@ -42,9 +42,8 @@ from mu.coding.templates import (
 )
 from mu.agent.tools import find_tool
 from mu.coding.tools import create_coding_tools
-from mu.hermes.memory import format_memory_listing, frozen_memory_block, learning_nudge, memory_search
-from mu.hermes.paths import is_awake, mark_awake
-from mu.hermes.tool import create_memory_tool
+from mu.hermes.plugin import HermesPlugin
+from mu.plugin import Plugin
 from mu.jsonx import py_str
 from mu.pyrt import runtime
 from mu.text import is_blank, strip_text
@@ -115,11 +114,11 @@ def maybe_compact(
 
 
 def run_once[
-    C: Completer, S: EventSink
+    C: Completer, S: EventSink, P: Plugin
 ](
     mut loop: AgentLoop,
     mut provider: C,
-    runner: CodingRunner,
+    runner: CodingRunner[P],
     prompt: String,
     session: Path,
     mode: String,
@@ -127,7 +126,7 @@ def run_once[
     live: Bool,
     persist: Bool,
 ) raises -> Bool:
-    var run = loop.prompt_live[C, CodingRunner, S](
+    var run = loop.prompt_live[C, CodingRunner[P], S](
         provider, runner, prompt, sink
     )
     persist_new_messages(session, run, persist)
@@ -192,9 +191,6 @@ def main() raises:
     var templates = load_templates(work)
     var persist = not args.no_session
     var session_name = args.session_name
-    if args.hermes and not persist:
-        print("error: --hermes requires a persisted session (drop --no-session)")
-        exit(2)
 
     var session_id = args.session
     var resumed = False
@@ -225,18 +221,18 @@ def main() raises:
         except e:
             print("error:", String(e))
             exit(2)
-    var runner = CodingRunner(session_id, args.model, provider_cfg.name)
-
-    var living = args.hermes or is_awake(session_id)
-    var hermes_block = String()
-    if living:
-        mark_awake(session_id)
-        tools.append(create_memory_tool())
-        hermes_block = frozen_memory_block(session_id)
-        hermes_block = hermes_block + "\n\n" + learning_nudge()
+    var plugin = HermesPlugin()
+    var start_err = plugin.on_start(session_id, persist, args.hermes)
+    if start_err.byte_length() > 0:
+        print("error:", start_err)
+        exit(2)
+    var extra = plugin.extra_tools(session_id)
+    for tool in extra:
+        tools.append(tool.copy())
     var system = build_system_prompt(
-        work, tools, args.system_prompt, "", skills, hermes_block
+        work, tools, args.system_prompt, plugin.extra_prompt(session_id), skills
     )
+    var runner = CodingRunner(session_id, args.model, provider_cfg.name, plugin.copy())
 
     var loop = AgentLoop(
         system, args.model, work, tools^, args.max_turns, prior^
@@ -249,35 +245,21 @@ def main() raises:
     if strip_text(prompt) == "/prompts":
         print(format_template_list(templates))
         return
-    if strip_text(prompt) == "/memory" or strip_text(prompt).startswith("/memory "):
-        if not living:
-            print("hermes is asleep. /hermes to wake this session.")
-            return
-        if strip_text(prompt) == "/memory":
-            print(format_memory_listing(session_id))
-        else:
-            var mq = strip_text(String(prompt[byte=8 : prompt.byte_length()]))
-            print(memory_search(session_id, mq, ""))
-        return
-    if strip_text(prompt) == "/hermes" or strip_text(prompt).startswith("/hermes "):
-        if not living:
-            mark_awake(session_id)
-            loop.add_tool(create_memory_tool())
-            var late_block = frozen_memory_block(session_id) + "\n\n" + learning_nudge()
-            loop.replace_system(
-                build_system_prompt(
-                    work, loop.tools, args.system_prompt, "", skills, late_block
-                )
-            )
-        print(String("hermes awake on session ", session_id))
-        print("This Mu session is now a living agent. Memory is weighted here.")
-        if strip_text(prompt) == "/hermes":
-            if not args.interactive:
-                return
-            prompt = ""
-        else:
-            prompt = strip_text(String(prompt[byte=8 : prompt.byte_length()]))
     if not is_blank(prompt):
+        var pre = plugin.handle_command(prompt, session_id, persist)
+        if pre.handled:
+            if pre.error.byte_length() > 0:
+                print("error:", pre.error)
+                exit(2)
+            if pre.printed.byte_length() > 0:
+                print(pre.printed)
+            apply_plugin_effects(loop, plugin, session_id, work, args.system_prompt, skills)
+            if pre.consume:
+                if not args.interactive:
+                    return
+                prompt = ""
+            elif pre.rewrite.byte_length() > 0:
+                prompt = pre.rewrite
         try:
             var expanded = expand_skill_command(prompt, skills)
             if expanded:
@@ -357,12 +339,38 @@ def main() raises:
         exit(1)
 
 
+
+def apply_plugin_effects[
+    P: Plugin
+](
+    mut loop: AgentLoop,
+    plugin: P,
+    session_id: String,
+    cwd_path: String,
+    custom: String,
+    skills: List[Skill],
+) raises:
+    """Add newly offered plugin tools. Rebuild the prompt only if one landed."""
+    var added = False
+    for tool in plugin.extra_tools(session_id):
+        if not find_tool(loop.tools, tool.name):
+            loop.add_tool(tool.copy())
+            added = True
+    if not added:
+        return
+    loop.replace_system(
+        build_system_prompt(
+            cwd_path, loop.tools, custom, plugin.extra_prompt(session_id), skills
+        )
+    )
+
+
 def drive[
-    C: Completer
+    C: Completer, P: Plugin
 ](
     mut loop: AgentLoop,
     mut provider: C,
-    runner: CodingRunner,
+    mut runner: CodingRunner[P],
     mut session: Path,
     mut session_id: String,
     prompt: String,
@@ -440,11 +448,11 @@ def drive[
 
 
 def repl[
-    C: Completer
+    C: Completer, P: Plugin
 ](
     mut loop: AgentLoop,
     mut provider: C,
-    runner: CodingRunner,
+    mut runner: CodingRunner[P],
     mut session: Path,
     mut session_id: String,
     mode: String,
@@ -490,22 +498,25 @@ def repl[
         if text == "/help":
             print(
                 "Commands: /exit  /help  /tools  /session  /status  /compact "
-                " /clear  /skills  /prompts  /skill:<name>  /name  /hermes  /memory  /tree  /fork"
+                " /clear  /skills  /prompts  /skill:<name>  /name  /tree  /fork",
+                runner.plugin.extra_help(),
             )
             continue
         if text == "/session":
             print(session_id)
             continue
-        if text == "/memory" or text.startswith("/memory "):
-            if not find_tool(loop.tools, "memory"):
-                print("hermes is asleep. /hermes to wake this session.")
+        var plug = runner.plugin.handle_command(text, session_id, persist)
+        if plug.handled:
+            if plug.error.byte_length() > 0:
+                print("error:", plug.error)
                 continue
-            if text == "/memory":
-                print(format_memory_listing(session_id))
-            else:
-                var q = strip_text(String(text[byte=8 : text.byte_length()]))
-                print(memory_search(session_id, q, ""))
-            continue
+            if plug.printed.byte_length() > 0:
+                print(plug.printed)
+            apply_plugin_effects(loop, runner.plugin, session_id, cwd, "", skills)
+            if plug.consume:
+                continue
+            if plug.rewrite.byte_length() > 0:
+                text = plug.rewrite
         if text == "/tree":
             if persist:
                 print(format_tree(session))
@@ -528,21 +539,6 @@ def repl[
         if text == "/prompts":
             print(format_template_list(templates))
             continue
-        if text == "/hermes" or text.startswith("/hermes "):
-            if find_tool(loop.tools, "memory"):
-                print(String("hermes already awake on ", session_id))
-            else:
-                mark_awake(session_id)
-                loop.add_tool(create_memory_tool())
-                var block = frozen_memory_block(session_id) + "\n\n" + learning_nudge()
-                loop.replace_system(
-                    build_system_prompt(cwd, loop.tools, "", "", skills, block)
-                )
-                print(String("hermes awake on session ", session_id))
-                print("This Mu session is now a living agent. Memory is weighted here.")
-            if text == "/hermes":
-                continue
-            text = strip_text(String(text[byte=8 : text.byte_length()]))
         if text.startswith("/name "):
             var named = strip_text(String(text[byte=6 : text.byte_length()]))
             session_name = named

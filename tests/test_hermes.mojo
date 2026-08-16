@@ -15,6 +15,7 @@ from mu.hermes.memory import (
     split_entries,
 )
 from mu.hermes.paths import hermes_home_path, is_awake, mark_awake
+from mu.hermes.plugin import HermesPlugin
 from mu.hermes.tool import create_memory_tool, execute_memory
 from mu.agent.messages import ToolCall
 
@@ -151,6 +152,30 @@ def test_memory_tool() raises:
     )
     assert_true(not searched.is_error)
     assert_true(searched.content.find("bound") >= 0)
+
+
+def test_plugin_wakes_and_lists() raises:
+    _ = _isolate()
+    var sid = "20260816-120000-000006"
+    var p = HermesPlugin()
+    assert_equal(p.extra_help().find("/hermes") >= 0, True)
+    assert_equal(len(p.extra_tools(sid)), 0)
+    assert_equal(p.extra_prompt(sid), "")
+    var err = p.on_start(sid, False, True)
+    assert_true(err.find("persisted") >= 0)
+    assert_equal(p.on_start(sid, True, True), "")
+    assert_true(is_awake(sid))
+    assert_equal(len(p.extra_tools(sid)), 1)
+    assert_true(p.extra_prompt(sid).find("<hermes_soul>") >= 0)
+    var listed = p.handle_command("/memory", sid, True)
+    assert_true(listed.handled)
+    assert_true(listed.consume)
+    var wake = p.handle_command("/hermes remember this", sid, True)
+    assert_true(wake.handled)
+    assert_equal(wake.rewrite, "remember this")
+    var idle = HermesPlugin()
+    var asleep = idle.handle_command("/memory", "other", True)
+    assert_true(asleep.printed.find("asleep") >= 0)
 
 
 def main() raises:

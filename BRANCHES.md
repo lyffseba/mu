@@ -12,6 +12,7 @@ hermes   — the same tree, plus a native living Hermes agent
 - **`master` is the default.** It is a coding-agent harness. Sessions are transcripts. Nothing lives between them except the JSONL log.
 - **`hermes` is `master` plus one capability.** `/hermes` (and `--hermes`) turns the current Mu session into a living [Hermes Agent](https://hermes-agent.nousresearch.com/docs/): SOUL, curated memory, a user profile, and a learning loop *weighted on that session*.
 - **They stay aligned.** Features, fixes, and docs land on `master` first, then merge into `hermes`. Hermes-only files never merge back.
+- **Hermes is a `Plugin`.** Master ships `NullPlugin`. This branch swaps in `HermesPlugin` and keeps `--hermes`. Living-agent code stays under `src/mu/hermes/`.
 - **Do not add other long-lived public branches.** Experiments stay local.
 
 ## Which one should I use?

@@ -10,7 +10,6 @@ from std.python import Python, PythonObject
 
 from mu.agent.messages import ToolCall
 from mu.agent.tools import Tool, ToolResult
-from mu.hermes.tool import execute_memory
 from mu.jsonx import (
     empty_object,
     json_dumps,
@@ -152,8 +151,6 @@ def execute_tool(
             return tool_bash(args, cwd, session_id, model, provider)
         if tool.kind == "echo":
             return ToolResult.ok(json_get_str(args, "text"))
-        if tool.kind == "memory":
-            return execute_memory(call, session_id)
         return ToolResult.error(String("Unknown tool kind: ", tool.kind))
     except e:
         return ToolResult.error(String(e))
