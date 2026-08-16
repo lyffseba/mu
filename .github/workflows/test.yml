@@ -1,0 +1,19 @@
+name: test
+
+on:
+  push:
+    branches: [master, hermes]
+  pull_request:
+    branches: [master, hermes]
+
+jobs:
+  test:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - uses: prefix-dev/setup-pixi@v0.8.8
+        with:
+          pixi-version: v0.41.4
+          cache: true
+      - name: Test
+        run: pixi run test

@@ -24,6 +24,14 @@ from mu.coding.session import (
     session_path,
     write_session_header,
 )
+from mu.coding.tree import (
+    current_leaf,
+    fork_to,
+    format_tree,
+    load_branch_messages,
+    persist_leaf,
+    persist_tree_message,
+)
 from mu.coding.settings import load_settings, remember_session
 from mu.coding.skills import Skill, expand_skill_command, format_skill_list, load_skills
 from mu.coding.templates import (
@@ -50,8 +58,11 @@ def eprint(text: String) raises:
 def persist_new_messages(path: Path, run: AgentRun, persist: Bool) raises:
     if not persist:
         return
+    var leaf = current_leaf(path)
     for message in run.new_messages:
-        persist_message(path, message)
+        leaf = persist_tree_message(path, message, leaf)
+    if leaf.byte_length() > 0:
+        persist_leaf(path, leaf)
 
 
 def ensure_session(
@@ -198,13 +209,22 @@ def main() raises:
         if not existing.exists():
             print("error: session not found:", session_id)
             exit(2)
-        prior = load_session_messages(existing)
+        prior = load_branch_messages(existing)
         resumed = True
     else:
         session_id = new_session_id()
 
     var session = session_path(session_id)
     var session_created = resumed
+    if args.fork.byte_length() > 0:
+        if not resumed:
+            print("error: --fork requires --session")
+            exit(2)
+        try:
+            prior = fork_to(session, args.fork)
+        except e:
+            print("error:", String(e))
+            exit(2)
     var runner = CodingRunner(session_id, args.model, provider_cfg.name)
 
     var living = args.hermes or is_awake(session_id)
@@ -470,7 +490,7 @@ def repl[
         if text == "/help":
             print(
                 "Commands: /exit  /help  /tools  /session  /status  /compact "
-                " /clear  /skills  /prompts  /skill:<name>  /name  /hermes  /memory"
+                " /clear  /skills  /prompts  /skill:<name>  /name  /hermes  /memory  /tree  /fork"
             )
             continue
         if text == "/session":
@@ -485,6 +505,25 @@ def repl[
             else:
                 var q = strip_text(String(text[byte=8 : text.byte_length()]))
                 print(memory_search(session_id, q, ""))
+            continue
+        if text == "/tree":
+            if persist:
+                print(format_tree(session))
+            else:
+                print("(ephemeral session)")
+            continue
+        if text.startswith("/fork "):
+            var ident = strip_text(String(text[byte=6 : text.byte_length()]))
+            if not persist:
+                print("error: /fork needs a persisted session")
+                continue
+            try:
+                var branched = fork_to(session, ident)
+                var n = len(branched)
+                loop.replace_messages(branched^)
+                print(String("forked to ", ident, " (", n, " messages)"))
+            except e:
+                print("error:", String(e))
             continue
         if text == "/prompts":
             print(format_template_list(templates))

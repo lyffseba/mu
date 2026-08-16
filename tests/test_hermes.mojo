@@ -124,6 +124,14 @@ def test_search_and_recall() raises:
     assert_true(rec.find("postgres") >= 0)
     var rec_miss = recall_other_sessions(here, "auth")
     assert_true(rec_miss.find("no matches") >= 0)
+    assert_true(rec.find(here) < 0)
+    var empty_threw = False
+    try:
+        _ = recall_other_sessions(here, "")
+    except e:
+        empty_threw = True
+        assert_true(String(e).find("query") >= 0)
+    assert_true(empty_threw)
 
 
 def test_memory_tool() raises:

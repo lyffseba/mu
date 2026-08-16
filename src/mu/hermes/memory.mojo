@@ -19,7 +19,7 @@ from mu.hermes.paths import (
     soul_path,
     user_path,
 )
-from mu.text import join_lines, split_lines, strip_text
+from mu.text import is_session_id, join_lines, split_lines, strip_text
 
 
 comptime MEMORY_LIMIT = 2200
@@ -334,6 +334,8 @@ def recall_other_sessions(session_id: String, query: String, limit: Int = 8) rai
     var lines = List[String]()
     for name in names:
         var ident = String(name)
+        if not is_session_id(ident):
+            continue
         if ident == session_id:
             continue
         var path = root / ident / "MEMORY.md"

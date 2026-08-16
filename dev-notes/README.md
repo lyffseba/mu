@@ -14,3 +14,5 @@ Phase-by-phase build journal. Public docs stay in `README.md`.
 - [009-hermes.md](009-hermes.md) — living Hermes agent (this branch only)
 - [010-hermes-right.md](010-hermes-right.md) — awake probe, separator/target, no ephemeral living agent
 - [011-hermes-better.md](011-hermes-better.md) — /memory, search, cross-session recall
+- [012-tree-and-ci.md](012-tree-and-ci.md) — GitHub Actions + append-only session trees
+- [013-align.md](013-align.md) — merge master; recall skips this session
