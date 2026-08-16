@@ -32,7 +32,11 @@ from mu.coding.templates import (
     format_template_list,
     load_templates,
 )
+from mu.agent.tools import find_tool
 from mu.coding.tools import create_coding_tools
+from mu.hermes.memory import frozen_memory_block, learning_nudge
+from mu.hermes.paths import is_awake, mark_awake
+from mu.hermes.tool import create_memory_tool
 from mu.jsonx import py_str
 from mu.pyrt import runtime
 from mu.text import is_blank, strip_text
@@ -177,7 +181,6 @@ def main() raises:
     var templates = load_templates(work)
     var persist = not args.no_session
     var session_name = args.session_name
-    var system = build_system_prompt(work, tools, args.system_prompt, "", skills)
 
     var session_id = args.session
     var resumed = False
@@ -201,6 +204,17 @@ def main() raises:
     var session_created = resumed
     var runner = CodingRunner(session_id, args.model, provider_cfg.name)
 
+    var living = args.hermes or is_awake(session_id)
+    var hermes_block = String()
+    if living:
+        mark_awake(session_id)
+        tools.append(create_memory_tool())
+        hermes_block = frozen_memory_block(session_id)
+        hermes_block = hermes_block + "\n\n" + learning_nudge()
+    var system = build_system_prompt(
+        work, tools, args.system_prompt, "", skills, hermes_block
+    )
+
     var loop = AgentLoop(
         system, args.model, work, tools^, args.max_turns, prior^
     )
@@ -212,6 +226,24 @@ def main() raises:
     if strip_text(prompt) == "/prompts":
         print(format_template_list(templates))
         return
+    if strip_text(prompt) == "/hermes" or strip_text(prompt).startswith("/hermes "):
+        if not living:
+            mark_awake(session_id)
+            loop.add_tool(create_memory_tool())
+            var late_block = frozen_memory_block(session_id) + "\n\n" + learning_nudge()
+            loop.replace_system(
+                build_system_prompt(
+                    work, loop.tools, args.system_prompt, "", skills, late_block
+                )
+            )
+        print(String("hermes awake on session ", session_id))
+        print("This Mu session is now a living agent. Memory is weighted here.")
+        if strip_text(prompt) == "/hermes":
+            if not args.interactive:
+                return
+            prompt = ""
+        else:
+            prompt = strip_text(String(prompt[byte=8 : prompt.byte_length()]))
     if not is_blank(prompt):
         try:
             var expanded = expand_skill_command(prompt, skills)
@@ -425,7 +457,7 @@ def repl[
         if text == "/help":
             print(
                 "Commands: /exit  /help  /tools  /session  /status  /compact "
-                " /clear  /skills  /prompts  /skill:<name>  /name"
+                " /clear  /skills  /prompts  /skill:<name>  /name  /hermes"
             )
             continue
         if text == "/session":
@@ -434,6 +466,21 @@ def repl[
         if text == "/prompts":
             print(format_template_list(templates))
             continue
+        if text == "/hermes" or text.startswith("/hermes "):
+            if find_tool(loop.tools, "memory"):
+                print(String("hermes already awake on ", session_id))
+            else:
+                mark_awake(session_id)
+                loop.add_tool(create_memory_tool())
+                var block = frozen_memory_block(session_id) + "\n\n" + learning_nudge()
+                loop.replace_system(
+                    build_system_prompt(cwd, loop.tools, "", "", skills, block)
+                )
+                print(String("hermes awake on session ", session_id))
+                print("This Mu session is now a living agent. Memory is weighted here.")
+            if text == "/hermes":
+                continue
+            text = strip_text(String(text[byte=8 : text.byte_length()]))
         if text.startswith("/name "):
             var named = strip_text(String(text[byte=6 : text.byte_length()]))
             session_name = named

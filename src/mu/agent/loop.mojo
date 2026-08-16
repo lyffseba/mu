@@ -87,6 +87,13 @@ struct AgentLoop:
     def replace_messages(mut self, var messages: List[Message]):
         self.messages = messages^
 
+    def replace_system(mut self, system: String):
+        self.system = system
+
+    def add_tool(mut self, tool: Tool):
+        if not find_tool(self.tools, tool.name):
+            self.tools.append(tool)
+
     def prompt[
         C: Completer, R: ToolRunner
     ](mut self, mut provider: C, runner: R, content: String) raises -> AgentRun:

@@ -10,8 +10,8 @@ This public repo has **exactly two branches**. They stay aligned. Only one diffe
 
 | Branch | What you get |
 | --- | --- |
-| **`master`** (this) | A normal Mu / Pi session. Stateless between runs except the JSONL transcript. No living agent. |
-| **`hermes`** | Same Mu, plus a native living [Hermes](https://hermes-agent.nousresearch.com/docs/) agent. `/hermes` binds *this* session to persistent memory, SOUL, and a learning loop. |
+| **`master`** | A normal Mu / Pi session. Stateless between runs except the JSONL transcript. No living agent. |
+| **`hermes`** (this) | Same Mu, plus a native living [Hermes](https://hermes-agent.nousresearch.com/docs/) agent. `/hermes` binds *this* session to persistent memory, SOUL, and a learning loop. |
 
 ```bash
 git clone https://github.com/lyffseba/mu.git
@@ -19,7 +19,9 @@ cd mu                 # master — a normal session
 git checkout hermes   # living Hermes agent, session-weighted
 ```
 
-If you want the agent to remember you, learn skills from work, and stay alive across turns — use `hermes`. If you want a disposable coding session — stay on `master`.
+**You are on `hermes`.** `/hermes` or `--hermes` wakes a living agent on this session. Details: [HERMES.md](HERMES.md).
+
+If you want a disposable coding session — `git checkout master`.
 
 See [BRANCHES.md](BRANCHES.md).
 
@@ -79,6 +81,7 @@ What works today:
 - Prompt templates (`/name`, `$1` / `$@`, `/prompts`)
 - `--name` display names and `--no-session` ephemeral runs
 - Recursive skill discovery (`**/SKILL.md`)
+- **Living Hermes agent** (`/hermes`, `--hermes`) — session-weighted memory, SOUL, learning loop
 
 What is intentionally not here yet:
 

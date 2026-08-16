@@ -89,6 +89,7 @@ def build_system_prompt(
     custom: String = "",
     append: String = "",
     skills: List[Skill] = List[Skill](),
+    hermes_block: String = "",
 ) raises -> String:
     """Build the system prompt, optionally replacing or appending to the default.
     """
@@ -105,4 +106,6 @@ def build_system_prompt(
     var extra = load_project_instructions(cwd_path)
     if extra.byte_length() > 0:
         prompt = prompt + extra
+    if hermes_block.byte_length() > 0:
+        prompt = prompt + "\n\n" + hermes_block
     return prompt

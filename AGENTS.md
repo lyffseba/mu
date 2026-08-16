@@ -3,7 +3,9 @@
 Mu is a Mojo 1.0 implementation of Pi/Tau's minimalist coding-agent harness.
 Streaming, compaction, and the Python runtime live at the edges. The loop stays portable.
 
-Public branches: `master` (this tree — a normal session) and `hermes` (same tree plus a living Hermes agent). See BRANCHES.md. Never add living-agent code on master.
+This is the **hermes** branch. Living-agent code lives in `src/mu/hermes/`.
+Public branches: `master` (no living agent) and `hermes` (this). See BRANCHES.md and HERMES.md.
+Never merge `src/mu/hermes/` back to master.
 
 ```text
 AgentLoop   = reusable agent brain

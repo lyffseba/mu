@@ -11,3 +11,4 @@ Phase-by-phase build journal. Public docs stay in `README.md`.
 - [006-do-it-better.md](006-do-it-better.md) — skills, cwd-scoped --continue / --sessions
 - [007-do-it-right.md](007-do-it-right.md) — skill parse, cwd slash, isolated discovery, Pi/Mojo docs
 - [008-do-it-better.md](008-do-it-better.md) — prompt templates, named sessions, --no-session, recursive skills
+- [009-hermes.md](009-hermes.md) — living Hermes agent (this branch only)
