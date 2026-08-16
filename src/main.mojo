@@ -11,7 +11,7 @@ from mu.agent.sink import EventSink, NullSink, PrintSink
 from mu.ai.completers import EchoCompleter, OpenAICompleter
 from mu.coding.config import parse_args, resolve_provider, usage
 from mu.coding.context import apply_compaction, estimate_context_tokens
-from mu.coding.prompt import build_system_prompt
+from mu.coding.prompt import apply_plugin_effects, build_system_prompt
 from mu.coding.render import last_assistant_text, render_json, render_text
 from mu.coding.runner import CodingRunner
 from mu.coding.session import (
@@ -40,7 +40,6 @@ from mu.coding.templates import (
     format_template_list,
     load_templates,
 )
-from mu.agent.tools import find_tool
 from mu.coding.active import create_plugin
 from mu.coding.tools import create_coding_tools
 from mu.plugin import Plugin
@@ -232,7 +231,7 @@ def main() raises:
     var system = build_system_prompt(
         work, tools, args.system_prompt, plugin.extra_prompt(session_id), skills
     )
-    var runner = CodingRunner(session_id, args.model, provider_cfg.name, plugin.copy())
+    var runner = CodingRunner(session_id, args.model, provider_cfg.name, plugin^)
 
     var loop = AgentLoop(
         system, args.model, work, tools^, args.max_turns, prior^
@@ -246,7 +245,7 @@ def main() raises:
         print(format_template_list(templates))
         return
     if not is_blank(prompt):
-        var pre = plugin.handle_command(prompt, session_id, persist)
+        var pre = runner.plugin.handle_command(prompt, session_id, persist)
         if pre.handled:
             if pre.error.byte_length() > 0:
                 print("error:", pre.error)
@@ -254,7 +253,7 @@ def main() raises:
             if pre.printed.byte_length() > 0:
                 print(pre.printed)
             apply_plugin_effects(
-                loop, plugin, session_id, work, args.system_prompt, skills
+                loop, runner.plugin, session_id, work, args.system_prompt, skills
             )
             if pre.consume:
                 if not args.interactive:
@@ -307,6 +306,7 @@ def main() raises:
             templates,
             persist,
             session_name,
+            args.system_prompt,
         )
         if not ok:
             exit(1)
@@ -336,34 +336,10 @@ def main() raises:
         templates,
         persist,
         session_name,
+        args.system_prompt,
     )
     if not ok:
         exit(1)
-
-
-def apply_plugin_effects[
-    P: Plugin
-](
-    mut loop: AgentLoop,
-    plugin: P,
-    session_id: String,
-    cwd_path: String,
-    custom: String,
-    skills: List[Skill],
-) raises:
-    """Add newly offered plugin tools. Rebuild the prompt only if one landed."""
-    var added = False
-    for tool in plugin.extra_tools(session_id):
-        if not find_tool(loop.tools, tool.name):
-            loop.add_tool(tool.copy())
-            added = True
-    if not added:
-        return
-    loop.replace_system(
-        build_system_prompt(
-            cwd_path, loop.tools, custom, plugin.extra_prompt(session_id), skills
-        )
-    )
 
 
 def drive[
@@ -391,6 +367,7 @@ def drive[
     templates: List[Template],
     persist: Bool,
     mut session_name: String,
+    custom_system: String,
 ) raises -> Bool:
     var ok = True
     if not is_blank(prompt):
@@ -444,6 +421,7 @@ def drive[
         templates,
         persist,
         session_name,
+        custom_system,
     )
     return ok
 
@@ -470,6 +448,7 @@ def repl[
     templates: List[Template],
     persist: Bool,
     mut session_name: String,
+    custom_system: String,
 ) raises:
     var status = "resumed" if resumed else "session"
     print(
@@ -514,7 +493,9 @@ def repl[
                 continue
             if plug.printed.byte_length() > 0:
                 print(plug.printed)
-            apply_plugin_effects(loop, runner.plugin, session_id, cwd, "", skills)
+            apply_plugin_effects(
+                loop, runner.plugin, session_id, cwd, custom_system, skills
+            )
             if plug.consume:
                 continue
             if plug.rewrite.byte_length() > 0:

@@ -14,10 +14,17 @@ from mu.hermes.memory import (
     recall_other_sessions,
     split_entries,
 )
+from mu.agent.loop import AgentLoop
+from mu.agent.messages import ToolCall
+from mu.agent.tools import find_tool
+from mu.coding.active import create_plugin
+from mu.coding.prompt import apply_plugin_effects, build_system_prompt
+from mu.coding.runner import CodingRunner
+from mu.coding.skills import Skill
+from mu.coding.tools import create_coding_tools
 from mu.hermes.paths import hermes_home_path, is_awake, mark_awake
 from mu.hermes.plugin import HermesPlugin
 from mu.hermes.tool import create_memory_tool, execute_memory
-from mu.agent.messages import ToolCall
 
 
 def _isolate() raises -> String:
@@ -177,6 +184,80 @@ def test_plugin_wakes_and_lists() raises:
     var idle = HermesPlugin()
     var asleep = idle.handle_command("/memory", "other", True)
     assert_true(asleep.printed.find("asleep") >= 0)
+
+
+def test_create_plugin_is_hermes() raises:
+    var p = create_plugin()
+    assert_equal(p.version_suffix(), "-hermes")
+    assert_true(p.extra_help().find("/memory") >= 0)
+
+
+def test_idle_plugin_does_not_mkdir() raises:
+    _ = _isolate()
+    var sid = "20260816-120000-000007"
+    var p = HermesPlugin()
+    assert_equal(len(p.extra_tools(sid)), 0)
+    assert_equal(p.extra_prompt(sid), "")
+    var listed = p.handle_command("/memory", sid, True)
+    assert_true(listed.printed.find("asleep") >= 0)
+    var ephemeral = p.handle_command("/hermes", sid, False)
+    assert_true(ephemeral.error.find("persisted") >= 0)
+    assert_true(not is_awake(sid))
+    assert_true(not hermes_home_path().exists())
+
+
+def test_empty_memory_query_lists() raises:
+    _ = _isolate()
+    var sid = "20260816-120000-000008"
+    var p = HermesPlugin()
+    assert_equal(p.on_start(sid, True, True), "")
+    var listed = p.handle_command("/memory   ", sid, True)
+    assert_true(listed.handled)
+    assert_true(listed.consume)
+    assert_true(listed.printed.find("SESSION") >= 0)
+    var blank = p.handle_command("/hermes   ", sid, True)
+    assert_true(blank.consume)
+    assert_equal(blank.rewrite, "")
+
+
+def test_late_wake_freezes_snapshot() raises:
+    _ = _isolate()
+    var sid = "20260816-120000-000009"
+    var tools = create_coding_tools()
+    var loop = AgentLoop("sys", "fake", ".", tools^, 4)
+    var plugin = HermesPlugin()
+    apply_plugin_effects(loop, plugin, sid, ".", "", List[Skill]())
+    assert_true(not find_tool(loop.tools, "memory"))
+    assert_equal(loop.system, "sys")
+    var wake = plugin.handle_command("/hermes remember this", sid, True)
+    assert_equal(wake.rewrite, "remember this")
+    apply_plugin_effects(loop, plugin, sid, ".", "custom only", List[Skill]())
+    assert_true(Bool(find_tool(loop.tools, "memory")))
+    assert_true(loop.system.find("custom only") >= 0)
+    assert_true(loop.system.find("<hermes_soul>") >= 0)
+    assert_true(loop.system.find("You are an expert coding assistant") < 0)
+    var frozen = loop.system
+    apply_plugin_effects(loop, plugin, sid, ".", "custom only", List[Skill]())
+    assert_equal(loop.system, frozen)
+
+
+def test_runner_dispatches_memory() raises:
+    _ = _isolate()
+    var sid = "20260816-120000-000012"
+    var plugin = HermesPlugin()
+    assert_equal(plugin.on_start(sid, True, True), "")
+    var runner = CodingRunner(sid, "", "", plugin)
+    var got = runner.run(
+        create_memory_tool(),
+        ToolCall(
+            "1",
+            "memory",
+            '{"action":"add","target":"session","content":"bound"}',
+        ),
+        ".",
+    )
+    assert_true(not got.is_error)
+    assert_true(got.content.find("added") >= 0)
 
 
 def main() raises:

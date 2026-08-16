@@ -57,9 +57,11 @@ struct HermesPlugin(Plugin, ImplicitlyCopyable):
                 return CommandResult.done(
                     "hermes is asleep. /hermes to wake this session."
                 )
-            if t == "/memory":
+            var q = String()
+            if t.startswith("/memory "):
+                q = strip_text(String(t[byte=8 : t.byte_length()]))
+            if q.byte_length() == 0:
                 return CommandResult.done(format_memory_listing(session_id))
-            var q = strip_text(String(t[byte=8 : t.byte_length()]))
             return CommandResult.done(memory_search(session_id, q, ""))
         if t == "/hermes" or t.startswith("/hermes "):
             if not persist:
@@ -78,11 +80,12 @@ struct HermesPlugin(Plugin, ImplicitlyCopyable):
                     session_id,
                     "\nThis Mu session is now a living agent. Memory is weighted here.",
                 )
-            if t == "/hermes":
+            var rest = String()
+            if t.startswith("/hermes "):
+                rest = strip_text(String(t[byte=8 : t.byte_length()]))
+            if rest.byte_length() == 0:
                 return CommandResult.done(printed)
-            var result = CommandResult.rewrite_prompt(
-                strip_text(String(t[byte=8 : t.byte_length()]))
-            )
+            var result = CommandResult.rewrite_prompt(rest)
             result.printed = printed
             return result
         return CommandResult.ignore()
