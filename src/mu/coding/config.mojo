@@ -37,6 +37,7 @@ struct CliArgs(Copyable, ImplicitlyCopyable, Movable):
     var no_skills: Bool
     var no_session: Bool
     var session_name: String
+    var fork: String
     var error: String
 
     @staticmethod
@@ -91,6 +92,7 @@ struct CliArgs(Copyable, ImplicitlyCopyable, Movable):
             False,
             False,
             False,
+            "",
             "",
             "",
         )
@@ -153,6 +155,10 @@ def parse_args() raises -> CliArgs:
             continue
         if arg == "-n" or arg == "--name":
             args.session_name = take_value(args, raw, i, "--name")
+            i += 1
+            continue
+        if arg == "--fork":
+            args.fork = take_value(args, raw, i, "--fork")
             i += 1
             continue
         if arg == "-p" or arg == "--print":
@@ -311,7 +317,7 @@ def usage() -> String:
         " after N model turns (default 16)\n      --system-prompt T  Replace"
         " the default system prompt (or a file path)\n      --session ID      "
         " Resume an existing JSONL session\n  -c, --continue         Resume the"
-        " last session\n      --sessions         List recent sessions\n      --no-session       Do not persist this run\n  -n, --name NAME       Display name for a new session\n      --no-skills        Disable skill discovery\n     "
+        " last session\n      --sessions         List recent sessions\n      --no-session       Do not persist this run\n  -n, --name NAME       Display name for a new session\n      --fork ID          Continue from a session tree entry\n      --no-skills        Disable skill discovery\n     "
         " --no-stream        Disable token streaming\n      --no-auto-compact "
         " Never compact long sessions\n      --compact-threshold N  Approximate"
         " tokens before auto-compact (default 24000)\n      --compact-keep N  "

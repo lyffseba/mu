@@ -11,3 +11,4 @@ Phase-by-phase build journal. Public docs stay in `README.md`.
 - [006-do-it-better.md](006-do-it-better.md) — skills, cwd-scoped --continue / --sessions
 - [007-do-it-right.md](007-do-it-right.md) — skill parse, cwd slash, isolated discovery, Pi/Mojo docs
 - [008-do-it-better.md](008-do-it-better.md) — prompt templates, named sessions, --no-session, recursive skills
+- [012-tree-and-ci.md](012-tree-and-ci.md) — GitHub Actions + append-only session trees

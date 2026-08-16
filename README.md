@@ -78,12 +78,13 @@ What works today:
 - Bash tools inherit `AI_AGENT=mu` and `MU_SESSION_ID` / `MU_MODEL` / `MU_PROVIDER`
 - Prompt templates (`/name`, `$1` / `$@`, `/prompts`)
 - `--name` display names and `--no-session` ephemeral runs
+- Session trees (`/tree`, `/fork`, `--fork`) — append-only, Pi-shaped
+- GitHub Actions runs `pixi run test` on push
 - Recursive skill discovery (`**/SKILL.md`)
 
 What is intentionally not here yet:
 
 - A real TUI
-- Session branching
 - OAuth login and a provider catalog
 - Extensions, themes
 - Image attachments
