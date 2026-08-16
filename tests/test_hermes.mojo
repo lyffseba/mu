@@ -204,6 +204,9 @@ def test_idle_plugin_does_not_mkdir() raises:
     assert_true(ephemeral.error.find("persisted") >= 0)
     assert_true(not is_awake(sid))
     assert_true(not hermes_home_path().exists())
+    assert_equal(p.extra_status(sid), "")
+    assert_equal(p.session_mark(sid), "")
+    assert_true(not hermes_home_path().exists())
 
 
 def test_empty_memory_query_lists() raises:
@@ -258,6 +261,30 @@ def test_runner_dispatches_memory() raises:
     )
     assert_true(not got.is_error)
     assert_true(got.content.find("added") >= 0)
+
+
+def test_status_and_recall_command() raises:
+    _ = _isolate()
+    var here = "20260816-120000-000013"
+    var other = "20260816-120000-000014"
+    var p = HermesPlugin()
+    assert_equal(p.extra_status(here), "")
+    assert_equal(p.session_mark(here), "")
+    assert_equal(p.on_start(here, True, True), "")
+    assert_equal(p.extra_status(here), "hermes=awake")
+    assert_equal(p.session_mark(here), "awake")
+    _ = memory_add("session", other, "Other session migrated postgres.")
+    var usage = p.handle_command("/recall", here, True)
+    assert_true(usage.printed.find("usage:") >= 0)
+    var hit = p.handle_command("/recall postgres", here, True)
+    assert_true(hit.printed.find(other) >= 0)
+    assert_true(hit.printed.find("postgres") >= 0)
+    var miss = p.handle_command("/recall zzzz", here, True)
+    assert_true(miss.printed.find("no matches") >= 0)
+    var asleep = HermesPlugin()
+    var blocked = asleep.handle_command("/recall postgres", "other", True)
+    assert_true(blocked.printed.find("asleep") >= 0)
+    assert_true(p.extra_help().find("/recall") >= 0)
 
 
 def main() raises:

@@ -22,3 +22,5 @@ Phase-by-phase build journal. Public docs stay in `README.md`.
 - [017-hermes-one-file.md](017-hermes-one-file.md) — hermes overwrites coding/active.mojo only
 - [018-plugin-right.md](018-plugin-right.md) — last-block, custom system, runner owns plugin
 - [019-hermes-right-again.md](019-hermes-right-again.md) — plugin contracts for the living agent
+- [020-plugin-status.md](020-plugin-status.md) — /status and --sessions show plugin marks
+- [021-hermes-status.md](021-hermes-status.md) — living sessions visible; /recall

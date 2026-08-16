@@ -7,6 +7,7 @@ from mu.hermes.memory import (
     frozen_memory_block,
     learning_nudge,
     memory_search,
+    recall_other_sessions,
 )
 from mu.hermes.paths import is_awake, mark_awake
 from mu.hermes.tool import create_memory_tool, execute_memory
@@ -26,7 +27,17 @@ struct HermesPlugin(Plugin, ImplicitlyCopyable):
         return "-hermes"
 
     def extra_help(self) -> String:
-        return " /hermes  /memory"
+        return " /hermes  /memory  /recall"
+
+    def extra_status(self, session_id: String) raises -> String:
+        if is_awake(session_id):
+            return "hermes=awake"
+        return ""
+
+    def session_mark(self, session_id: String) raises -> String:
+        if is_awake(session_id):
+            return "awake"
+        return ""
 
     def extra_tools(self, session_id: String) raises -> List[Tool]:
         var tools = List[Tool]()
@@ -63,6 +74,17 @@ struct HermesPlugin(Plugin, ImplicitlyCopyable):
             if q.byte_length() == 0:
                 return CommandResult.done(format_memory_listing(session_id))
             return CommandResult.done(memory_search(session_id, q, ""))
+        if t == "/recall" or t.startswith("/recall "):
+            if not is_awake(session_id):
+                return CommandResult.done(
+                    "hermes is asleep. /hermes to wake this session."
+                )
+            var rq = String()
+            if t.startswith("/recall "):
+                rq = strip_text(String(t[byte=8 : t.byte_length()]))
+            if rq.byte_length() == 0:
+                return CommandResult.done("usage: /recall <query>")
+            return CommandResult.done(recall_other_sessions(session_id, rq))
         if t == "/hermes" or t.startswith("/hermes "):
             if not persist:
                 return CommandResult.fail(

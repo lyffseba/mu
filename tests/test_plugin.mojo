@@ -26,6 +26,18 @@ struct WakePlugin(Plugin, ImplicitlyCopyable):
     def extra_help(self) -> String:
         return " /wake"
 
+    def extra_status(self, session_id: String) raises -> String:
+        _ = session_id
+        if self.awake:
+            return "plugin=awake"
+        return ""
+
+    def session_mark(self, session_id: String) raises -> String:
+        _ = session_id
+        if self.awake:
+            return "awake"
+        return ""
+
     def extra_tools(self, session_id: String) raises -> List[Tool]:
         _ = session_id
         var tools = List[Tool]()
@@ -72,6 +84,8 @@ def test_null_plugin_is_idle() raises:
     var p = NullPlugin()
     assert_equal(p.version_suffix(), "")
     assert_equal(p.extra_help(), "")
+    assert_equal(p.extra_status("s"), "")
+    assert_equal(p.session_mark("s"), "")
     assert_equal(len(p.extra_tools("s")), 0)
     assert_equal(p.extra_prompt("s"), "")
     assert_equal(p.on_start("s", True, False), "")

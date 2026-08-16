@@ -1,8 +1,9 @@
 """Tiny plugin hook. Master ships NullPlugin via coding/active.mojo.
 
 A plugin can add tools, a system-prompt block, slash commands, a
-version suffix, and tool kinds the coding runner does not know.
-Hermes overwrites coding/active.mojo. Master never imports mu.hermes.
+version suffix, status/session marks, and tool kinds the coding
+runner does not know. Hermes overwrites coding/active.mojo.
+Master never imports mu.hermes.
 """
 
 from mu.agent.messages import ToolCall
@@ -45,6 +46,12 @@ trait Plugin(Copyable, Movable, Deinitable):
     def extra_help(self) -> String:
         ...
 
+    def extra_status(self, session_id: String) raises -> String:
+        ...
+
+    def session_mark(self, session_id: String) raises -> String:
+        ...
+
     def extra_tools(self, session_id: String) raises -> List[Tool]:
         ...
 
@@ -80,6 +87,14 @@ struct NullPlugin(Plugin, ImplicitlyCopyable):
         return ""
 
     def extra_help(self) -> String:
+        return ""
+
+    def extra_status(self, session_id: String) raises -> String:
+        _ = session_id
+        return ""
+
+    def session_mark(self, session_id: String) raises -> String:
+        _ = session_id
         return ""
 
     def extra_tools(self, session_id: String) raises -> List[Tool]:
