@@ -10,6 +10,8 @@ from mu.hermes.memory import (
     memory_add,
     memory_remove,
     memory_replace,
+    memory_search,
+    recall_other_sessions,
     split_entries,
 )
 from mu.hermes.paths import hermes_home_path, is_awake, mark_awake
@@ -105,6 +107,25 @@ def test_awake_and_snapshot() raises:
     assert_true(snap.find(sid) >= 0)
 
 
+def test_search_and_recall() raises:
+    _ = _isolate()
+    var here = "20260816-120000-000010"
+    var other = "20260816-120000-000011"
+    _ = memory_add("session", here, "This session is about auth.")
+    _ = memory_add("memory", here, "Machine has pixi.")
+    _ = memory_add("session", other, "Other session migrated postgres.")
+    var hit = memory_search(here, "auth", "")
+    assert_true(hit.find("auth") >= 0)
+    assert_true(hit.find("[session]") >= 0)
+    var miss = memory_search(here, "zzzz", "")
+    assert_true(miss.find("no matches") >= 0)
+    var rec = recall_other_sessions(here, "postgres")
+    assert_true(rec.find(other) >= 0)
+    assert_true(rec.find("postgres") >= 0)
+    var rec_miss = recall_other_sessions(here, "auth")
+    assert_true(rec_miss.find("no matches") >= 0)
+
+
 def test_memory_tool() raises:
     _ = _isolate()
     var sid = "20260816-120000-000005"
@@ -116,6 +137,12 @@ def test_memory_tool() raises:
     )
     assert_true(not got.is_error)
     assert_true(got.content.find("added") >= 0)
+    var searched = execute_memory(
+        ToolCall("2", "memory", '{"action":"search","query":"bound"}'),
+        sid,
+    )
+    assert_true(not searched.is_error)
+    assert_true(searched.content.find("bound") >= 0)
 
 
 def main() raises:

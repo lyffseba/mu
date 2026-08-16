@@ -4,7 +4,13 @@ from std.python import PythonObject
 
 from mu.agent.messages import ToolCall
 from mu.agent.tools import Tool, ToolResult
-from mu.hermes.memory import memory_add, memory_remove, memory_replace
+from mu.hermes.memory import (
+    memory_add,
+    memory_remove,
+    memory_replace,
+    memory_search,
+    recall_other_sessions,
+)
 from mu.jsonx import json_get_str, json_loads
 from mu.text import strip_text
 
@@ -12,12 +18,13 @@ from mu.text import strip_text
 def memory_schema() -> String:
     return (
         '{"type":"object","properties":{'
-        '"action":{"type":"string","enum":["add","replace","remove"],'
-        '"description":"add a new entry, replace one unique substring, or remove one"},'
+        '"action":{"type":"string","enum":["add","replace","remove","search","recall"],'
+        '"description":"add/replace/remove an entry; search this agent; recall other sessions"},'
         '"target":{"type":"string","enum":["memory","user","session"],'
         '"description":"memory=global notes, user=profile, session=this Mu session"},'
         '"content":{"type":"string","description":"New entry text (add/replace)"},'
-        '"old_text":{"type":"string","description":"Unique substring (replace/remove)"}'
+        '"old_text":{"type":"string","description":"Unique substring (replace/remove)"},'
+        '"query":{"type":"string","description":"Search text (search/recall)"}'
         '},"required":["action","target"]}'
     )
 
@@ -63,6 +70,17 @@ def execute_memory(call: ToolCall, session_id: String) raises -> ToolResult:
             return ToolResult.ok(
                 memory_remove(target, session_id, json_get_str(args, "old_text"))
             )
-        return ToolResult.error("action must be add, replace, or remove")
+        if action == "search":
+            var q = json_get_str(args, "query")
+            if q.byte_length() == 0:
+                q = json_get_str(args, "content")
+            var scope = json_get_str(args, "target")
+            return ToolResult.ok(memory_search(session_id, q, scope))
+        if action == "recall":
+            var q2 = json_get_str(args, "query")
+            if q2.byte_length() == 0:
+                q2 = json_get_str(args, "content")
+            return ToolResult.ok(recall_other_sessions(session_id, q2))
+        return ToolResult.error("action must be add, replace, remove, search, or recall")
     except e:
         return ToolResult.error(String(e))

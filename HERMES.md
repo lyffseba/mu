@@ -20,6 +20,7 @@ That **wakes** the current Mu session as a living agent:
 - A learning nudge asks it to persist durable facts and consider writing skills.
 - Session-weighted notes live under `~/.mu/hermes/sessions/<id>/MEMORY.md`.
 - An `AWAKE` marker means later `--session <id>` or `-c` stays living.
+- `/memory` lists stores; `/memory <query>` searches them. The `memory` tool also has `search` and `recall` (other sessions).
 
 The rest of Mu is unchanged: same tools, same JSONL transcript, same loop. Hermes is weighted **on this session**, not a second process.
 

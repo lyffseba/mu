@@ -14,6 +14,7 @@ from std.pathlib import Path
 
 from mu.hermes.paths import (
     global_memory_path,
+    hermes_home_path,
     session_memory_path,
     soul_path,
     user_path,
@@ -276,6 +277,76 @@ def frozen_memory_block(session_id: String) raises -> String:
         "Writes via the memory tool persist immediately and show in tool "
         "results; they appear here on the next wake."
     )
+    return join_lines(lines)
+
+
+def memory_search(
+    session_id: String, query: String, target: String = ""
+) raises -> String:
+    """Case-insensitive substring search. Empty target searches all stores."""
+    var q = strip_text(query)
+    if q.byte_length() == 0:
+        raise Error("query is required")
+    var needle = q.lower()
+    var targets = List[String]()
+    if target.byte_length() == 0:
+        targets.append("session")
+        targets.append("memory")
+        targets.append("user")
+    else:
+        require_target(target)
+        targets.append(target)
+    var lines = List[String]()
+    for t in targets:
+        var entries = load_entries(t, session_id)
+        var i = 0
+        for entry in entries:
+            if entry.lower().find(needle) >= 0:
+                lines.append(String("[", t, "] ", entry))
+            i += 1
+    if len(lines) == 0:
+        return "(no matches)"
+    return join_lines(lines)
+
+
+def format_memory_listing(session_id: String) raises -> String:
+    """Human listing for /memory."""
+    ensure_seed_files()
+    var parts = List[String]()
+    parts.append(render_store("SESSION", load_entries("session", session_id), MEMORY_LIMIT))
+    parts.append("")
+    parts.append(render_store("MEMORY", load_entries("memory", session_id), MEMORY_LIMIT))
+    parts.append("")
+    parts.append(render_store("USER", load_entries("user", session_id), USER_LIMIT))
+    return join_lines(parts)
+
+
+def recall_other_sessions(session_id: String, query: String, limit: Int = 8) raises -> String:
+    """Search other living sessions' MEMORY.md. This session is skipped."""
+    var q = strip_text(query)
+    if q.byte_length() == 0:
+        raise Error("query is required")
+    var needle = q.lower()
+    var root = hermes_home_path() / "sessions"
+    if not root.exists() or not root.is_dir():
+        return "(no other sessions)"
+    var names = root.listdir()
+    var lines = List[String]()
+    for name in names:
+        var ident = String(name)
+        if ident == session_id:
+            continue
+        var path = root / ident / "MEMORY.md"
+        if not path.exists() or not path.is_file():
+            continue
+        var entries = split_entries(read_store(path))
+        for entry in entries:
+            if entry.lower().find(needle) >= 0:
+                lines.append(String("[", ident, "] ", entry))
+                if len(lines) >= limit:
+                    return join_lines(lines)
+    if len(lines) == 0:
+        return "(no matches in other sessions)"
     return join_lines(lines)
 
 

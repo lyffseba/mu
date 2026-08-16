@@ -34,7 +34,7 @@ from mu.coding.templates import (
 )
 from mu.agent.tools import find_tool
 from mu.coding.tools import create_coding_tools
-from mu.hermes.memory import frozen_memory_block, learning_nudge
+from mu.hermes.memory import format_memory_listing, frozen_memory_block, learning_nudge, memory_search
 from mu.hermes.paths import is_awake, mark_awake
 from mu.hermes.tool import create_memory_tool
 from mu.jsonx import py_str
@@ -228,6 +228,16 @@ def main() raises:
         return
     if strip_text(prompt) == "/prompts":
         print(format_template_list(templates))
+        return
+    if strip_text(prompt) == "/memory" or strip_text(prompt).startswith("/memory "):
+        if not living:
+            print("hermes is asleep. /hermes to wake this session.")
+            return
+        if strip_text(prompt) == "/memory":
+            print(format_memory_listing(session_id))
+        else:
+            var mq = strip_text(String(prompt[byte=8 : prompt.byte_length()]))
+            print(memory_search(session_id, mq, ""))
         return
     if strip_text(prompt) == "/hermes" or strip_text(prompt).startswith("/hermes "):
         if not living:
@@ -460,11 +470,21 @@ def repl[
         if text == "/help":
             print(
                 "Commands: /exit  /help  /tools  /session  /status  /compact "
-                " /clear  /skills  /prompts  /skill:<name>  /name  /hermes"
+                " /clear  /skills  /prompts  /skill:<name>  /name  /hermes  /memory"
             )
             continue
         if text == "/session":
             print(session_id)
+            continue
+        if text == "/memory" or text.startswith("/memory "):
+            if not find_tool(loop.tools, "memory"):
+                print("hermes is asleep. /hermes to wake this session.")
+                continue
+            if text == "/memory":
+                print(format_memory_listing(session_id))
+            else:
+                var q = strip_text(String(text[byte=8 : text.byte_length()]))
+                print(memory_search(session_id, q, ""))
             continue
         if text == "/prompts":
             print(format_template_list(templates))
