@@ -101,6 +101,10 @@ pixi run mu --version
 pixi run build          # optional: compiled binary at build/mu
 ```
 
+Language, runtime, and CI pins — what this tree locks, how it uses
+them, and where that sits against current stable releases — are in
+[docs/STACK.md](docs/STACK.md).
+
 ## Quickstart
 
 ```bash
