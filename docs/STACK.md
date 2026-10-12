@@ -3,8 +3,8 @@
 Pins for the `master` tree, how this repo uses them, and where they sit
 against current stable releases.
 
-Audited **2026-09-25** against `master` commit
-`8f045f135ba3c8271595f840bd595a82195f793c` (2026-08-16). The install
+Audited **2026-10-12** against `master` commit
+`b8d669bd18d3287cdfcd01edcc451881d1165b12` (2026-09-25). The install
 truth is [`pixi.lock`](../pixi.lock). The allowed window is
 [`pixi.toml`](../pixi.toml). CI pins live in
 [`.github/workflows/test.yml`](../.github/workflows/test.yml).
@@ -118,24 +118,24 @@ pins 3.12.
 ### Python standard library
 
 `src/mu_runtime.py` is the only Python file. Doc links are the
-**3.12.14** release manuals (latest stable 3.12 patch, 2026-08-12).
+**3.12.15** release manuals (latest stable 3.12 patch, 2026-09-30).
 The series alias is <https://docs.python.org/3.12/>.
 
-| Module | Role in `mu_runtime.py` | 3.12.14 manual |
+| Module | Role in `mu_runtime.py` | 3.12.15 manual |
 | --- | --- | --- |
-| `json` | `dumps` / `loads` for messages, SSE, sessions | [json](https://docs.python.org/release/3.12.14/library/json.html) |
-| `urllib.request`, `urllib.error` | chat-completions POST and SSE | [request](https://docs.python.org/release/3.12.14/library/urllib.request.html), [error](https://docs.python.org/release/3.12.14/library/urllib.error.html) |
-| `subprocess`, `os` | `bash` tool (`shell=True`, inherited env plus `AI_AGENT` / `MU_*`) | [subprocess](https://docs.python.org/release/3.12.14/library/subprocess.html), [os](https://docs.python.org/release/3.12.14/library/os.html) |
-| `sys` | stdin, stdout, stderr | [sys](https://docs.python.org/release/3.12.14/library/sys.html) |
-| `time` | retry backoff | [time](https://docs.python.org/release/3.12.14/library/time.html) |
-| `datetime` | session id timestamps | [datetime](https://docs.python.org/release/3.12.14/library/datetime.html) |
-| `typing` | `Any`, `Callable`, `Iterator`, `TypeVar` | [typing](https://docs.python.org/release/3.12.14/library/typing.html) |
+| `json` | `dumps` / `loads` for messages, SSE, sessions | [json](https://docs.python.org/release/3.12.15/library/json.html) |
+| `urllib.request`, `urllib.error` | chat-completions POST and SSE | [request](https://docs.python.org/release/3.12.15/library/urllib.request.html), [error](https://docs.python.org/release/3.12.15/library/urllib.error.html) |
+| `subprocess`, `os` | `bash` tool (`shell=True`, inherited env plus `AI_AGENT` / `MU_*`) | [subprocess](https://docs.python.org/release/3.12.15/library/subprocess.html), [os](https://docs.python.org/release/3.12.15/library/os.html) |
+| `sys` | stdin, stdout, stderr | [sys](https://docs.python.org/release/3.12.15/library/sys.html) |
+| `time` | retry backoff | [time](https://docs.python.org/release/3.12.15/library/time.html) |
+| `datetime` | session id timestamps | [datetime](https://docs.python.org/release/3.12.15/library/datetime.html) |
+| `typing` | `Any`, `Callable`, `Iterator`, `TypeVar` | [typing](https://docs.python.org/release/3.12.15/library/typing.html) |
 
-Release notes: [Python 3.12.14](https://www.python.org/downloads/release/python-31214/).
+Release notes: [Python 3.12.15](https://www.python.org/downloads/release/python-31215/).
 3.12 is in security-fixes-only mode until October 2028 (PEP 693).
 3.12.10 was the last 3.12 release with binary installers. conda-forge
-still publishes `python 3.12.14` for `osx-arm64` (build
-`hd05a0c4_3_cpython`, uploaded 2026-09-03).
+still publishes `python 3.12.15` for `osx-arm64` (build
+`hd05a0c4_1_cpython`, uploaded 2026-10-06).
 
 ### Source map
 
@@ -172,7 +172,7 @@ The workflow does not run `pixi run fmt` or `pixi run build`.
 
 ## Ours vs latest stable
 
-Checked 2026-09-25. "Latest stable" excludes nightlies and previews.
+Checked 2026-10-12. "Latest stable" excludes nightlies and previews.
 Moving any of these is a lockfile change plus `pixi run test`, not a
 docs edit.
 
@@ -180,9 +180,9 @@ docs edit.
 | --- | --- | --- | --- |
 | Mojo | manifest `>=1.0.0,<2`; lock **1.0.0** (2026-08-11 release, conda package timestamp 2026-08-09) | **1.1.0** (2026-09-17) | One minor. The manifest range allows 1.1. The lock does not. [1.0.0 notes](https://mojolang.org/releases/v1.0.0/), [1.1.0 notes](https://mojolang.org/releases/v1.1.0/), [index](https://mojolang.org/releases/) |
 | mblack | **26.5.0**, required by conda `mojo==1.0.0` | **26.6.0**, required by PyPI `mojo==1.1.0` | Tracks the Mojo pin. [26.5.0](https://pypi.org/project/mblack/26.5.0/), [26.6.0](https://pypi.org/project/mblack/26.6.0/) |
-| CPython | manifest `==3.12`; lock **3.12.0** `h47c9636_0_cpython` (2023-10-03) | **3.12.14** (2026-08-12); conda-forge `osx-arm64` `python 3.12.14` `hd05a0c4_3_cpython` (2026-09-03) | Fourteen patch releases, including security fixes. Pixi `==` is an exact MatchSpec match, so `==3.12` stays on 3.12.0. A 3.12 line is `3.12.*`. [spec](https://pixi.prefix.dev/v0.81.0/concepts/package_specifications/), [3.12.14](https://www.python.org/downloads/release/python-31214/) |
+| CPython | manifest `==3.12`; lock **3.12.0** `h47c9636_0_cpython` (2023-10-03) | **3.12.15** (2026-09-30); conda-forge `osx-arm64` `python 3.12.15` `hd05a0c4_1_cpython` (2026-10-06) | Fifteen patch releases, including security fixes. Pixi `==` is an exact MatchSpec match, so `==3.12` stays on 3.12.0. A 3.12 line is `3.12.*`. [spec](https://pixi.prefix.dev/v0.81.0/concepts/package_specifications/), [3.12.15](https://www.python.org/downloads/release/python-31215/) |
 | pixi CLI in CI | **v0.41.4** (2025-02-19) | **v0.81.0** (2026-09-15) | Local installs are unpinned; only CI is frozen. [v0.41.4](https://github.com/prefix-dev/pixi/releases/tag/v0.41.4), [v0.81.0](https://github.com/prefix-dev/pixi/releases/tag/v0.81.0) |
-| `setup-pixi` | **v0.8.8** (2025-04-15) | **v0.10.2** (2026-08-28) | v0.9.0 moved the action to Node 24. v0.10.0 changed the post-cleanup default. [v0.8.8](https://github.com/prefix-dev/setup-pixi/releases/tag/v0.8.8), [v0.10.2](https://github.com/prefix-dev/setup-pixi/releases/tag/v0.10.2) |
+| `setup-pixi` | **v0.8.8** (2025-04-15) | **v0.10.2** (2026-08-28) | v0.9.0 moved the action to Node 24. Node Current is **26.11.1**. v0.10.0 changed the post-cleanup default. [v0.8.8](https://github.com/prefix-dev/setup-pixi/releases/tag/v0.8.8), [v0.10.2](https://github.com/prefix-dev/setup-pixi/releases/tag/v0.10.2) |
 | `actions/checkout` | `@v4`, whose newest tag is **v4.4.0** (2026-07-20) | **v7.0.1** (2026-07-20) | Three majors. The v4 tag still receives backports. [v4.4.0](https://github.com/actions/checkout/releases/tag/v4.4.0), [v7.0.1](https://github.com/actions/checkout/releases/tag/v7.0.1) |
 | GitHub runner | **`macos-14`** | **`macos-26`** (`macos-latest` since the June–July 2026 migration). `macos-15` remains supported | `macos-14` deprecation started 2026-07-06. The image is scheduled to be unsupported on **2026-11-02**. [hosted runners](https://docs.github.com/en/actions/reference/runners/github-hosted-runners), [deprecation](https://github.com/actions/runner-images/issues/13518) |
 | Solve platform | `osx-arm64` only | README install line also names Linux | Linux is not a pixi platform in this lock, so `pixi install` there has nothing to solve |
@@ -193,10 +193,10 @@ sources use `def` and do not use those forms. That is a reading of the
 1.1 changelog, not a test run. `pixi run test` on a 1.1 lock is still
 required before bumping.
 
-The current Python feature series is 3.14. Mojo's stable interop
-manual allows 3.10–3.14. This repo's manifest stays on the 3.12 line
-on purpose. The drift that matters inside that choice is 3.12.0 versus
-3.12.14.
+The current Python feature series is 3.15 (3.15.0, 2026-10-09). Mojo's
+stable interop manual allows 3.10–3.14. This repo's manifest stays on
+the 3.12 line on purpose. The drift that matters inside that choice is
+3.12.0 versus 3.12.15.
 
 ## Official manuals
 
@@ -211,7 +211,7 @@ Use these when the tables above are too narrow.
 | `setup-pixi` inputs | [v0.10.2 README](https://github.com/prefix-dev/setup-pixi/blob/v0.10.2/README.md) | [v0.8.8 README](https://github.com/prefix-dev/setup-pixi/blob/v0.8.8/README.md) |
 | `actions/checkout` | [v7.0.1 README](https://github.com/actions/checkout/blob/v7.0.1/README.md) | [v4.4.0 README](https://github.com/actions/checkout/blob/v4.4.0/README.md) |
 | Workflow syntax | <https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax> | same |
-| Python 3.12 | <https://docs.python.org/release/3.12.14/> | the locked interpreter is 3.12.0; language docs for that series are the 3.12.14 manuals above |
+| Python 3.12 | <https://docs.python.org/release/3.12.15/> | the locked interpreter is 3.12.0; language docs for that series are the 3.12.15 manuals above |
 | conda-forge | <https://conda-forge.org/docs/user/introduction/> | same |
 | Modular conda channel | <https://conda.modular.com/max> | same |
 
